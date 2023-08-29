@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "666683279856",
+    "project_id": "listdisplay-e78a6",
+    "storage_bucket": "listdisplay-e78a6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:666683279856:android:52c352ee47bda597367535",
+        "android_client_info": {
+          "package_name": "com.elio.listpreview"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "666683279856-j2le1c31440fe63qq40cla2t5u8hll3r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.elio.listpreview",
+            "certificate_hash": "7cb77ff6c1be47829854829f32b0a7679447fdd2"
+          }
+        },
+        {
+          "client_id": "666683279856-bmvufnii0o0gofjdngbiccer397ds8pq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6AGNpu1aB8nfhyCEjdjour61WF8fuc3U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "666683279856-bmvufnii0o0gofjdngbiccer397ds8pq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
