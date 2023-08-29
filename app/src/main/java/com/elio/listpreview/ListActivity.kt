@@ -1,26 +1,40 @@
 package com.elio.listpreview
 
+import android.content.ContentValues.TAG
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
+import android.view.View
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.switchmaterial.SwitchMaterial
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
-import java.util.ArrayList
 
 
 class ListActivity : AppCompatActivity() {
 
-    private lateinit var database: DatabaseReference
+    private lateinit var database: FirebaseDatabase
     private var listAdapter : ListAdapter? = null
-    private var stringList = ArrayList<String>()
+    private var stringList: ArrayList<String>? = null
+    private var myDbRef : DatabaseReference? = null
+    private var listItemsRecycler: RecyclerView? = null
+    private lateinit var auth: FirebaseAuth
 
+    private var exampleList = arrayOf("kotlin", "java", "javascript", "css", "php", "ruby", "golang")
+    private var carsList = arrayListOf("fiat", "ferrari", "mercedes", "audi", "bmw", "lamborghini")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,50 +48,117 @@ class ListActivity : AppCompatActivity() {
             startActivity(openProfileActivity)
         }
         val switchOption = findViewById<SwitchMaterial>(R.id.switchOption)
-        val listItemsRecycler = findViewById<RecyclerView>(R.id.listItems)
+        switchOption.isChecked = true
+        switchOption.setOnCheckedChangeListener { _, isChecked ->
+            // if is checked load data from Firebase else load hardcoded
+            if (isChecked) {
+                writeDataToDB()
+                listItemsRecycler?.visibility = View.VISIBLE
+            } else {
+                addAdapter(carsList)
+            }
+
+        }
+        listItemsRecycler = findViewById(R.id.listItems)
+
+        // Initialize Firebase Auth
+        auth = FirebaseAuth.getInstance()
+
+        // init db
+        database = Firebase.database
+        // get reference of the db
+        myDbRef = database.getReference("list")
 
 
-        database = Firebase.database.reference
 
-//        // Read from the database
-//        myRef.addValueEventListener(object : ValueEventListener {
-//            override fun onDataChange(dataSnapshot: DataSnapshot) {
-//                // This method is called once with the initial value and again
-//                // whenever data at this location is updated.
-//                val value = dataSnapshot.getValue<String>()
-//                Log.d(TAG, "Value is: $value")
-//            }
-//
-//            override fun onCancelled(error: DatabaseError) {
-//                // Failed to read value
-//                Log.w(TAG, "Failed to read value.", error.toException())
-//            }
-//        })
-
-        //write(database)
     }
 
-    fun addAdapter(recyclerView: RecyclerView) {
+    override fun onResume() {
+        super.onResume()
+        writeDataToDB()
+        swipeOption()
+    }
 
-        recyclerView.layoutManager = GridLayoutManager(applicationContext, 1)
-        recyclerView.setPadding(0, 0, 0, 0)
+    // swipe option on recyclerView
+    private fun swipeOption () {
+        val simpleItemTouchCallback: ItemTouchHelper.SimpleCallback = object :
+            ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
+                return false
+            }
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, swipeDir: Int) {
+                // display the name of the removed from the list
+                Toast.makeText(this@ListActivity, "Deleted : ${
+                    stringList?.get(viewHolder.adapterPosition).toString()}", Toast.LENGTH_SHORT).show()
+                // Remove swiped item from list and notify the RecyclerView
+                val position = viewHolder.adapterPosition
+                stringList?.removeAt(position)
+                listAdapter?.notifyItemRemoved(position)
+            }
+        }
+        val itemTouchHelper = ItemTouchHelper(simpleItemTouchCallback)
+        itemTouchHelper.attachToRecyclerView(listItemsRecycler)
+    }
+
+    // read db
+    private fun readDataFromDB() {
+        try {
+            // Read from the database
+            myDbRef?.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    // This method is called once with the initial value and again whenever data at location is updated
+                    stringList = ((dataSnapshot.value) as? ArrayList<String>)
+                    // load the screen
+                    addAdapter(stringList!!)
+                }
+                override fun onCancelled(error: DatabaseError) {
+                    // Failed to read value
+                    Log.w(TAG, "Failed to read value.", error.toException())
+                }
+            })
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun writeDataToDB() {
+        try {
+            var i = 0
+            val arrayList = arrayListOf<String>()
+            // read all hardcoded items
+            while (i < exampleList.size) {
+                val name = exampleList[i]
+                arrayList.add(name)
+                i++
+            }
+
+            // Write a list to the database // the first time the user loads the app
+            if (auth.currentUser?.email != null) {
+                readDataFromDB()
+            } else {
+                // add hardcoded data's
+                myDbRef?.setValue(arrayList)
+            }
+            // read db
+            readDataFromDB()
+        } catch (e : Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // create adapter and load the view
+    fun addAdapter(stringList: ArrayList<String>) {
+
+        listItemsRecycler?.layoutManager = GridLayoutManager(applicationContext, 1)
         val itemAnimator = DefaultItemAnimator()
-        recyclerView.itemAnimator = itemAnimator
+        listItemsRecycler?.itemAnimator = itemAnimator
 
         listAdapter = ListAdapter(stringList)
-        // add horizontal line
-        recyclerView.addItemDecoration(DividerItemDecoration(applicationContext, DividerItemDecoration.VERTICAL))
-        recyclerView.itemAnimator = DefaultItemAnimator()
-
-        recyclerView.adapter = listAdapter
-    }
-
-
-    fun writeMessage() {
-        // Write a message to the database
-        val database = Firebase.database
-        val myRef = database.getReference("message")
-        myRef.setValue("string 1")
+        // add line
+        listItemsRecycler?.addItemDecoration(DividerItemDecoration(applicationContext, DividerItemDecoration.VERTICAL))
+        listItemsRecycler?.itemAnimator = DefaultItemAnimator()
+        listItemsRecycler?.adapter = listAdapter
     }
 
 

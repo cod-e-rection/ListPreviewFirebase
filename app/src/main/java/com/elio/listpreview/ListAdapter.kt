@@ -21,9 +21,8 @@ class ListAdapter(firebaseList: ArrayList<String>) : RecyclerView.Adapter<ListAd
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val feedItem = listOf(feedItemList[position])
         for (i in feedItem.indices) {
-            holder.txtValue.text = feedItem[i].toString()
+            holder.txtValue.text = feedItem[i]
         }
-
     }
 
     override fun getItemCount(): Int {
@@ -33,7 +32,6 @@ class ListAdapter(firebaseList: ArrayList<String>) : RecyclerView.Adapter<ListAd
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         // declaring the widgets
         internal var txtValue: TextView
-
         init {
             txtValue = itemView.findViewById(R.id.txtValue)
         }
