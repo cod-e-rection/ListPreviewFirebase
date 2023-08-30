@@ -123,6 +123,7 @@ class ListActivity : AppCompatActivity() {
                     // This method is called once with the initial value and again whenever data at location is updated
                     stringList = ((dataSnapshot.value) as? ArrayList<String>)
                     // load the screen
+                    exampleList = stringList!!
                     addAdapter(stringList!!)
                 }
                 override fun onCancelled(error: DatabaseError) {
