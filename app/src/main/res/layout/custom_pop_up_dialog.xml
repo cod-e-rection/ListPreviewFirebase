@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:layout_marginStart="32dp"
+    android:layout_marginEnd="32dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <TextView
+        android:id="@+id/titlePrompt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Please enter data below :"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginTop="32dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginStart="16dp"
+        android:gravity="center_horizontal"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/enteredValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:inputType="textShortMessage"
+        android:maxLength="40"
+        android:maxLines="1"
+        app:layout_constraintStart_toStartOf="@+id/titlePrompt"
+        app:layout_constraintEnd_toEndOf="@+id/titlePrompt"
+        app:layout_constraintTop_toBottomOf="@+id/titlePrompt" />
+
+    <TextView
+        android:id="@+id/stringCounter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/black"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="32dp"
+        app:layout_constraintEnd_toEndOf="@+id/enteredValue"
+        app:layout_constraintTop_toBottomOf="@+id/enteredValue" />
+
+    <Button
+        android:id="@+id/saveButton"
+        style="@style/CosmoSolidHalfCircleButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="32dp"
+        android:layout_marginStart="32dp"
+        android:text="Save"
+        android:layout_marginTop="24dp"
+        app:layout_constraintTop_toBottomOf="@+id/stringCounter"
+        app:layout_constraintStart_toStartOf="@id/enteredValue"
+        app:layout_constraintEnd_toEndOf="@id/enteredValue"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="24dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

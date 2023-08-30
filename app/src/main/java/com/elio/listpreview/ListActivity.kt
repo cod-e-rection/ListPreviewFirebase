@@ -1,10 +1,16 @@
 package com.elio.listpreview
 
+import android.app.Dialog
 import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.View
+import android.view.Window
+import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -13,8 +19,9 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.elio.listpreview.helper.HelperClass
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.switchmaterial.SwitchMaterial
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -23,7 +30,6 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 
-
 class ListActivity : AppCompatActivity() {
 
     private lateinit var database: FirebaseDatabase
@@ -31,15 +37,16 @@ class ListActivity : AppCompatActivity() {
     private var stringList: ArrayList<String>? = null
     private var myDbRef : DatabaseReference? = null
     private var listItemsRecycler: RecyclerView? = null
-    private lateinit var auth: FirebaseAuth
+    private var floatingActionButton: FloatingActionButton? = null
 
-    private var exampleList = arrayOf("kotlin", "java", "javascript", "css", "php", "ruby", "golang")
+    private var exampleList = arrayListOf("kotlin", "java", "javascript", "css", "php", "ruby", "golang")
     private var carsList = arrayListOf("fiat", "ferrari", "mercedes", "audi", "bmw", "lamborghini")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_list)
 
+        listItemsRecycler = findViewById(R.id.listItems)
         val backButton = findViewById<TextView>(R.id.backButton)
         backButton.setOnClickListener { finish() }
         val profileButton = findViewById<TextView>(R.id.profileButton)
@@ -48,34 +55,41 @@ class ListActivity : AppCompatActivity() {
             startActivity(openProfileActivity)
         }
         val switchOption = findViewById<SwitchMaterial>(R.id.switchOption)
-        switchOption.isChecked = true
+        switchOption.isChecked = false
+        // load hardcoded data
+        addAdapter(carsList)
+
         switchOption.setOnCheckedChangeListener { _, isChecked ->
-            // if is checked load data from Firebase else load hardcoded
+            // first time we load hardcoded data for DB also in order to fill it
+            // if is checked load data from Firebase else load other hardcoded data
             if (isChecked) {
-                writeDataToDB()
-                listItemsRecycler?.visibility = View.VISIBLE
+                val userHasSeen = HelperClass().loadBoolean(applicationContext, "firstSaved", false)
+                if (userHasSeen) {
+                    readDataFromDB()
+                } else {
+                    writeDataToDB(exampleList)
+                }
             } else {
+                // load hardcoded data
                 addAdapter(carsList)
             }
 
         }
-        listItemsRecycler = findViewById(R.id.listItems)
-
-        // Initialize Firebase Auth
-        auth = FirebaseAuth.getInstance()
+        // floating button
+        floatingActionButton = findViewById(R.id.floatingActionButton)
+        floatingActionButton?.setOnClickListener {
+            showDialog()
+        }
 
         // init db
         database = Firebase.database
         // get reference of the db
         myDbRef = database.getReference("list")
 
-
-
     }
 
     override fun onResume() {
         super.onResume()
-        writeDataToDB()
         swipeOption()
     }
 
@@ -122,7 +136,7 @@ class ListActivity : AppCompatActivity() {
         }
     }
 
-    private fun writeDataToDB() {
+    private fun writeDataToDB(exampleList: ArrayList<String>) {
         try {
             var i = 0
             val arrayList = arrayListOf<String>()
@@ -134,12 +148,9 @@ class ListActivity : AppCompatActivity() {
             }
 
             // Write a list to the database // the first time the user loads the app
-            if (auth.currentUser?.email != null) {
-                readDataFromDB()
-            } else {
-                // add hardcoded data's
-                myDbRef?.setValue(arrayList)
-            }
+            // user has seen the added value
+            HelperClass().saveBoolean(applicationContext, "firstSaved", true)
+            myDbRef?.setValue(arrayList)
             // read db
             readDataFromDB()
         } catch (e : Exception) {
@@ -149,17 +160,53 @@ class ListActivity : AppCompatActivity() {
 
     // create adapter and load the view
     fun addAdapter(stringList: ArrayList<String>) {
-
+        // clear recycler
+        listItemsRecycler?.invalidate()
         listItemsRecycler?.layoutManager = GridLayoutManager(applicationContext, 1)
-        val itemAnimator = DefaultItemAnimator()
-        listItemsRecycler?.itemAnimator = itemAnimator
-
         listAdapter = ListAdapter(stringList)
-        // add line
+        // add horizontal line
         listItemsRecycler?.addItemDecoration(DividerItemDecoration(applicationContext, DividerItemDecoration.VERTICAL))
         listItemsRecycler?.itemAnimator = DefaultItemAnimator()
         listItemsRecycler?.adapter = listAdapter
     }
 
+    // add new value on db
+    private fun showDialog() {
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setCancelable(true)
+        dialog.setContentView(R.layout.custom_pop_up_dialog)
+        val enteredText = dialog.findViewById(R.id.enteredValue) as EditText
+        val stringCounter = dialog.findViewById(R.id.stringCounter) as TextView
+        val saveButton = dialog.findViewById(R.id.saveButton) as Button
+        // adding max chars for editText
+        enteredText.maxEms = 40
+        enteredText.addTextChangedListener(object: TextWatcher {
+            override fun afterTextChanged(s: Editable?) { }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) { }
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (s.toString().isNotEmpty()) {
+                    stringCounter.visibility = View.VISIBLE
+                    val counter = s?.length.toString()
+                    stringCounter.text = "$counter/40"
+                } else {
+                    stringCounter.visibility = View.INVISIBLE
+                }
+            }
+        })
+
+        // logic for the save button
+        saveButton.setOnClickListener {
+            if (enteredText.text.toString().isNotEmpty()) {
+                // add value to db
+                exampleList.add(enteredText.text.toString())
+                writeDataToDB(exampleList)
+            } else {
+                Toast.makeText(applicationContext, "No value was saved", Toast.LENGTH_LONG).show()
+            }
+            dialog.dismiss()
+        }
+        dialog.show()
+    }
 
 }
